@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+sentinel/__init__.py
+sentinel/__main__.py
+sentinel/cli.py
+sentinel.egg-info/PKG-INFO
+sentinel.egg-info/SOURCES.txt
+sentinel.egg-info/dependency_links.txt
+sentinel.egg-info/entry_points.txt
+sentinel.egg-info/requires.txt
+sentinel.egg-info/top_level.txt

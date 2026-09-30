@@ -1,0 +1,14 @@
+{
+  "model": {
+    "tfidf_max_features": 2000,
+    "svd_components": 30,
+    "window_seconds": 60,
+    "n_estimators": 200,
+    "contamination": 0.005,
+    "random_state": 42
+  },
+  "alerting": {
+    "cooldown_seconds": 60,
+    "slack_webhook_env_var": "SENTINEL_SLACK_WEBHOOK"
+  }
+}

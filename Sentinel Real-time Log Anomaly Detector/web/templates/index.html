@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel AI Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #030712;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-glow: 0 0 20px rgba(56, 189, 248, 0.3);
+            --brand-primary: #38bdf8;
+            --brand-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            --danger-color: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.15);
+            --warning-color: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.15);
+            --success-color: #10b981;
+            --font-main: 'Inter', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --panel-bg: rgba(255, 255, 255, 0.7);
+            --panel-border: rgba(0, 0, 0, 0.08);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent-glow: 0 4px 15px rgba(56, 189, 248, 0.4);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.08), transparent 25%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Navbar */
+        .navbar {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            border-bottom: 1px solid var(--panel-border);
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--brand-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .navbar-brand svg {
+            width: 28px;
+            height: 28px;
+            color: var(--brand-primary);
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .workspace-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--brand-primary);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            font-weight: 600;
+        }
+
+        .theme-toggle {
+            background: rgba(150, 150, 150, 0.1);
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .theme-toggle:hover {
+            background: rgba(150, 150, 150, 0.2);
+            transform: rotate(15deg);
+        }
+
+        /* Main Layout */
+        .main-container {
+            flex: 1;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            min-height: 0;
+        }
+
+        /* Controls Grid */
+        .controls-glass {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 2rem;
+            animation: slideDown 0.6s ease-out;
+            flex-shrink: 0;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        .status-dot.active {
+            background-color: var(--success-color);
+            box-shadow: 0 0 15px var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-text h3 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .status-text p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.25rem;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-primary {
+            background: var(--brand-gradient);
+            color: #fff;
+            box-shadow: var(--accent-glow);
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--panel-border);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(150, 150, 150, 0.1);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            animation: fadeUp 0.8s ease-out;
+            flex-shrink: 0;
+        }
+        .kpi-card {
+            padding: 1.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--brand-gradient);
+        }
+        .kpi-card:nth-child(2)::before { background: var(--danger-color); }
+        .kpi-card:nth-child(3)::before { background: var(--warning-color); }
+
+        .kpi-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .kpi-value {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1;
+            color: var(--text-main);
+            transition: transform 0.15s ease;
+            display: inline-block;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 2.5fr;
+            gap: 1.5rem;
+            flex: 1;
+            min-height: 0;
+            animation: fadeUp 1s ease-out;
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .panel-header {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-title {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: var(--font-display);
+        }
+        .chart-container {
+            flex: 1;
+            position: relative;
+            min-height: 200px;
+        }
+
+        /* Log Table */
+        .table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+        .table-wrapper::-webkit-scrollbar { width: 6px; }
+        .table-wrapper::-webkit-scrollbar-track { background: transparent; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 3px; }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.5rem;
+        }
+        th {
+            text-align: left;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.75rem 1rem;
+            position: sticky;
+            top: 0;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            z-index: 10;
+        }
+        td {
+            padding: 1rem;
+            background: rgba(150, 150, 150, 0.03);
+            border-top: 1px solid var(--panel-border);
+            border-bottom: 1px solid var(--panel-border);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+        td:first-child {
+            border-left: 1px solid var(--panel-border);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+        td:last-child {
+            border-right: 1px solid var(--panel-border);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+        tr {
+            transition: transform 0.2s, background 0.2s;
+            animation: rowEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        tr:hover td {
+            background: rgba(150, 150, 150, 0.08);
+        }
+
+        .col-time { width: 12%; color: var(--text-muted); font-family: var(--font-display); }
+        .col-ip { width: 15%; font-weight: 500; }
+        .col-score { width: 10%; font-family: var(--font-display); font-weight: 700;}
+        .col-reason { width: 18%; }
+        .col-raw { width: 45%; }
+
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+        .badge-danger {
+            background: var(--danger-bg);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .badge-warning {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .raw-data {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.15);
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--panel-border);
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        [data-theme="light"] .raw-data {
+            background: rgba(0,0,0,0.03);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            opacity: 0.4;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rowEntry {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .navbar { flex-direction: column; height: auto; padding: 1rem; gap: 1rem; }
+            .nav-controls { width: 100%; justify-content: space-between; }
+            .controls-glass { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .btn-group { width: 100%; }
+            .btn { flex: 1; justify-content: center; }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        .modal-content {
+            background: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 12px; width: 90%; max-width: 600px;
+            padding: 1.5rem; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; }
+        .modal-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; }
+        .modal-close { background: none; border: none; color: var(--text-muted); cursor: pointer; }
+        .modal-close:hover { color: var(--text-main); }
+        .modal-body pre { background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 6px; overflow-x: auto; font-family: 'Space Grotesk', monospace; font-size: 0.85rem; color: var(--text-main); border: 1px solid var(--panel-border); white-space: pre-wrap; word-break: break-all;}
+
+        /* Toolbar */
+        .table-toolbar {
+            display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; justify-content: space-between; width: 100%;
+        }
+        .toolbar-group { display: flex; gap: 0.5rem; flex-wrap: wrap; flex: 1;}
+        .toolbar-input {
+            background: rgba(0,0,0,0.1); border: 1px solid var(--panel-border);
+            color: var(--text-main); padding: 0.5rem 1rem; border-radius: 6px;
+            font-family: var(--font-main); font-size: 0.85rem; flex: 1; min-width: 150px;
+        }
+        [data-theme="light"] .toolbar-input { background: rgba(255,255,255,0.5); color: var(--text-main); }
+        [data-theme="light"] .toolbar-input option { background: #fff; color: #000; }
+        .toolbar-btn {
+            background: rgba(150,150,150,0.1); border: 1px solid var(--panel-border);
+            color: var(--text-main); padding: 0.5rem 1rem; border-radius: 6px;
+            cursor: pointer; font-family: var(--font-main); font-size: 0.85rem;
+            display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;
+        }
+        .toolbar-btn:hover { background: rgba(150,150,150,0.2); }
+        .toolbar-btn.active { background: var(--brand-gradient); color: #fff; border-color: transparent; }
+
+        .clickable-row { cursor: pointer; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="url(#brandGradient)">
+                <defs>
+                    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#38bdf8" />
+                        <stop offset="100%" stop-color="#818cf8" />
+                    </linearGradient>
+                </defs>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            Sentinel AI
+        </div>
+        <div class="nav-controls">
+            <div class="workspace-badge">Production Engine</div>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle Theme">
+                <svg id="theme-icon-moon" style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+                <svg id="theme-icon-sun" style="width:20px;height:20px;display:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        
+        <div class="glass controls-glass">
+            <div class="status-indicator">
+                <div class="status-dot" id="status-dot"></div>
+                <div class="status-text">
+                    <h3>Ingestion Engine</h3>
+                    <p id="status-text">Disconnected & Waiting</p>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button id="btn-start" class="btn btn-primary" onclick="startServer()">
+                    <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Initialize Monitoring
+                </button>
+                <button id="btn-stop" class="btn btn-secondary" onclick="stopServer()" disabled>
+                    <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg>
+                    Halt
+                </button>
+            </div>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="glass kpi-card">
+                <div class="kpi-title">Total Anomalies</div>
+                <div class="kpi-value" id="kpi-total">0</div>
+            </div>
+            <div class="glass kpi-card">
+                <div class="kpi-title">High Severity (Signatures)</div>
+                <div class="kpi-value danger" id="kpi-high">0</div>
+            </div>
+            <div class="glass kpi-card">
+                <div class="kpi-title">Suspicious Behavior (ML)</div>
+                <div class="kpi-value warning" id="kpi-ml">0</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="glass panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Threat Score Velocity</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="anomalyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass panel">
+                <div class="panel-header" style="flex-direction: column; align-items: stretch; gap: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="panel-title">Live Detection Stream</h2>
+                    </div>
+                    <div class="table-toolbar">
+                        <div class="toolbar-group">
+                            <input type="text" id="filter-search" class="toolbar-input" placeholder="Search IP or Payload...">
+                            <select id="filter-severity" class="toolbar-input">
+                                <option value="all">All Severities</option>
+                                <option value="high">High (Signatures)</option>
+                                <option value="medium">Medium (ML Suspicious)</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-group" style="flex: initial;">
+                            <button id="btn-pause-scroll" class="toolbar-btn">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Pause Scroll
+                            </button>
+                            <button id="btn-export" class="toolbar-btn">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-time">Time</th>
+                                <th class="col-ip">Source IP</th>
+                                <th class="col-score">Risk Score</th>
+                                <th class="col-reason">Trigger</th>
+                                <th class="col-raw">Payload</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr id="empty-state-row">
+                                <td colspan="5" style="background: transparent; border: none;">
+                                    <div class="empty-state">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                        </svg>
+                                        <p>Awaiting ingestion events. Initialize monitoring to begin.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Event Details</div>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <pre id="modal-json"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === Theme Toggle Logic ===
+        const htmlEl = document.documentElement;
+        const btnToggle = document.getElementById('theme-toggle');
+        const iconMoon = document.getElementById('theme-icon-moon');
+        const iconSun = document.getElementById('theme-icon-sun');
+
+        const savedTheme = localStorage.getItem('sentinel-theme');
+        const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initialTheme = savedTheme ? savedTheme : (systemPrefersDark ? 'dark' : 'light');
+
+        function setTheme(theme) {
+            htmlEl.setAttribute('data-theme', theme);
+            localStorage.setItem('sentinel-theme', theme);
+            if (theme === 'dark') {
+                iconMoon.style.display = 'none';
+                iconSun.style.display = 'block';
+                updateChartColors('#94a3b8');
+            } else {
+                iconMoon.style.display = 'block';
+                iconSun.style.display = 'none';
+                updateChartColors('#64748b');
+            }
+        }
+        btnToggle.addEventListener('click', () => {
+            const currentTheme = htmlEl.getAttribute('data-theme');
+            setTheme(currentTheme === 'light' ? 'dark' : 'light');
+        });
+
+
+        // === Dashboard Logic ===
+        const tableBody = document.getElementById('table-body');
+        const emptyStateRow = document.getElementById('empty-state-row');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const btnStart = document.getElementById('btn-start');
+        const btnStop = document.getElementById('btn-stop');
+        
+        const kpiTotal = document.getElementById('kpi-total');
+        const kpiHigh = document.getElementById('kpi-high');
+        const kpiMl = document.getElementById('kpi-ml');
+
+
+        let alertsData = [];
+        let isAutoScrollPaused = false;
+        let searchTerm = '';
+        let severityFilter = 'all';
+
+        const filterSearch = document.getElementById('filter-search');
+        const filterSeverity = document.getElementById('filter-severity');
+        const btnPauseScroll = document.getElementById('btn-pause-scroll');
+        const btnExport = document.getElementById('btn-export');
+        const detailModal = document.getElementById('detail-modal');
+        const modalJson = document.getElementById('modal-json');
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playAlertSound() {
+            if(audioCtx.state === 'suspended') { audioCtx.resume(); }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        filterSearch.addEventListener('input', (e) => {
+            searchTerm = e.target.value.toLowerCase();
+            applyFilters();
+        });
+
+        filterSeverity.addEventListener('change', (e) => {
+            severityFilter = e.target.value;
+            applyFilters();
+        });
+
+        btnPauseScroll.addEventListener('click', () => {
+            isAutoScrollPaused = !isAutoScrollPaused;
+            if(isAutoScrollPaused) {
+                btnPauseScroll.classList.add('active');
+                btnPauseScroll.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Resume Scroll';
+            } else {
+                btnPauseScroll.classList.remove('active');
+                btnPauseScroll.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Pause Scroll';
+                tableBody.scrollTop = tableBody.scrollHeight;
+            }
+        });
+
+        btnExport.addEventListener('click', () => {
+            if(alertsData.length === 0) return;
+            const headers = ['Timestamp', 'IP', 'Score', 'Reason', 'Raw Payload'];
+            const csvRows = [headers.join(',')];
+            alertsData.forEach(alert => {
+                const row = [
+                    alert.timestamp,
+                    alert.ip || '',
+                    alert.score,
+                    `"${alert.reason}"`,
+                    `"${alert.raw.replace(/"/g, '""')}"`
+                ];
+                csvRows.push(row.join(','));
+            });
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'sentinel_alerts.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        function applyFilters() {
+            const rows = tableBody.querySelectorAll('tr:not(#empty-state-row)');
+            rows.forEach((row, index) => {
+                const alert = alertsData[index];
+                if(!alert) return;
+                
+                let matchSearch = true;
+                if(searchTerm) {
+                    matchSearch = (alert.ip && alert.ip.toLowerCase().includes(searchTerm)) || 
+                                  alert.raw.toLowerCase().includes(searchTerm);
+                }
+                
+                let matchSeverity = true;
+                if(severityFilter !== 'all') {
+                    const isSig = alert.reason.includes("Signature");
+                    if(severityFilter === 'high' && !isSig) matchSeverity = false;
+                    if(severityFilter === 'medium' && isSig) matchSeverity = false;
+                }
+                
+                row.style.display = (matchSearch && matchSeverity) ? '' : 'none';
+            });
+        }
+
+        function openModal(index) {
+            const alert = alertsData[index];
+            if(!alert) return;
+            modalJson.textContent = JSON.stringify(alert, null, 2);
+            detailModal.classList.add('active');
+        }
+        function closeModal() {
+            detailModal.classList.remove('active');
+        }
+
+        let totalCount = 0;
+        let highSeverityCount = 0;
+        let mlCount = 0;
+
+        // Chart Initialization
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#94a3b8';
+        
+        const ctx = document.getElementById('anomalyChart').getContext('2d');
+        
+        // Gradient for Chart
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.5)');
+        gradient.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+        const anomalyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Anomaly Score',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { display: false },
+                    y: { 
+                        beginAtZero: true,
+                        grid: { 
+                            color: 'rgba(150, 150, 150, 0.1)',
+                            drawBorder: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#f8fafc',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                animation: {
+                    duration: 400,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        function updateChartColors(color) {
+            Chart.defaults.color = color;
+            if(anomalyChart) {
+                anomalyChart.options.scales.y.grid.color = htmlEl.getAttribute('data-theme') === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                anomalyChart.update();
+            }
+        }
+
+        let eventSource = null;
+        let isRunning = false;
+        let isFirstAlert = true;
+
+        async function updateStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                isRunning = data.generator_running && data.sentinel_running;
+                
+                if (isRunning) {
+                    statusDot.classList.add('active');
+                    statusText.textContent = "Active - Stream Processing";
+                    btnStart.disabled = true;
+                    btnStop.disabled = false;
+                    
+                    if (!eventSource) {
+                        startSSE();
+                    }
+                } else {
+                    statusDot.classList.remove('active');
+                    statusText.textContent = "Disconnected & Waiting";
+                    btnStart.disabled = false;
+                    btnStop.disabled = true;
+                    
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                }
+            } catch (e) {
+                console.error("Status check failed", e);
+            }
+        }
+
+        async function startServer() {
+            btnStart.disabled = true;
+            statusText.textContent = "Initializing Engine...";
+            try {
+                await fetch('/api/start', { method: 'POST' });
+                alertsData = [];
+                tableBody.innerHTML = '<tr id="empty-state-row"><td colspan="5" style="background:transparent; border:none;"><div class="empty-state">Engine initialized. Listening for security events...</div></td></tr>';
+                emptyStateRow = document.getElementById('empty-state-row');
+                isFirstAlert = true;
+                
+                totalCount = 0; highSeverityCount = 0; mlCount = 0;
+                kpiTotal.textContent = 0; kpiHigh.textContent = 0; kpiMl.textContent = 0;
+                
+                if (anomalyChart) {
+                    anomalyChart.data.labels = [];
+                    anomalyChart.data.datasets[0].data = [];
+                    anomalyChart.update();
+                }
+                
+                setTimeout(updateStatus, 1500);
+            } catch (e) {
+                console.error(e);
+                btnStart.disabled = false;
+            }
+        }
+
+        async function stopServer() {
+            btnStop.disabled = true;
+            statusText.textContent = "Halting Stream...";
+            try {
+                await fetch('/api/stop', { method: 'POST' });
+                setTimeout(updateStatus, 1000);
+            } catch (e) {
+                console.error(e);
+                btnStop.disabled = false;
+            }
+        }
+
+        function formatTime(unixTime) {
+            const d = new Date(unixTime * 1000);
+            return d.toLocaleTimeString([], { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+        }
+
+        function startSSE() {
+            eventSource = new EventSource('/api/stream');
+            
+            eventSource.onmessage = function(e) {
+                const alert = JSON.parse(e.data);
+                
+                if (isFirstAlert && emptyStateRow) {
+                    emptyStateRow.remove();
+                    isFirstAlert = false;
+                }
+
+                // Determine severity badge
+                alertsData.push(alert);
+                const alertIndex = alertsData.length - 1;
+                const isSignature = alert.reason.includes("Signature");
+                if (isSignature) {
+                    playAlertSound();
+                }
+                const badgeClass = isSignature ? "badge-danger" : "badge-warning";
+                
+                // Update KPIs
+                totalCount++;
+                if (isSignature) {
+                    highSeverityCount++;
+                } else {
+                    mlCount++;
+                }
+                
+                // Add subtle pop animation to numbers
+                const animateNumber = (el, val) => {
+                    el.textContent = val;
+                    el.style.transform = 'scale(1.1)';
+                    setTimeout(() => el.style.transform = 'scale(1)', 150);
+                };
+                
+                animateNumber(kpiTotal, totalCount);
+                animateNumber(kpiHigh, highSeverityCount);
+                animateNumber(kpiMl, mlCount);
+
+                // Update Chart
+                const timeStr = formatTime(alert.timestamp);
+                anomalyChart.data.labels.push(timeStr);
+                anomalyChart.data.datasets[0].data.push(alert.score);
+                if (anomalyChart.data.labels.length > 30) {
+                    anomalyChart.data.labels.shift();
+                    anomalyChart.data.datasets[0].data.shift();
+                }
+                anomalyChart.update();
+
+                const tr = document.createElement('tr');
+                tr.className = 'clickable-row';
+                tr.onclick = () => openModal(alertIndex);
+                tr.innerHTML = `
+                    <td class="col-time">${timeStr}</td>
+                    <td class="col-ip">${alert.ip || 'Unknown'}</td>
+                    <td class="col-score" style="color: ${isSignature ? 'var(--danger-color)' : 'var(--warning-color)'}">${alert.score.toFixed(3)}</td>
+                    <td class="col-reason">
+                        <span class="badge ${badgeClass}">
+                            ${isSignature ? 
+                                '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>' : 
+                                '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>'}
+                            ${alert.reason}
+                        </span>
+                    </td>
+                    <td class="col-raw">
+                        <pre class="raw-data">${alert.raw}</pre>
+                    </td>
+                `;
+                
+                
+                let matchSearch = true;
+                if(searchTerm) {
+                    matchSearch = (alert.ip && alert.ip.toLowerCase().includes(searchTerm)) || 
+                                  alert.raw.toLowerCase().includes(searchTerm);
+                }
+                let matchSeverity = true;
+                if(severityFilter !== 'all') {
+                    if(severityFilter === 'high' && !isSignature) matchSeverity = false;
+                    if(severityFilter === 'medium' && isSignature) matchSeverity = false;
+                }
+                tr.style.display = (matchSearch && matchSeverity) ? '' : 'none';
+
+                tableBody.appendChild(tr);
+                if(!isAutoScrollPaused) {
+                    tableBody.scrollTop = tableBody.scrollHeight; // Auto-scroll
+                }
+            };
+
+            eventSource.onerror = function() {
+                console.error("SSE connection lost");
+                eventSource.close();
+                eventSource = null;
+            };
+        }
+
+        // Initialize theme and chart colors
+        setTheme(initialTheme);
+
+        // Poll status every 3 seconds
+        setInterval(updateStatus, 3000);
+        updateStatus(); // Initial check
+    </script>
+</body>
+</html>

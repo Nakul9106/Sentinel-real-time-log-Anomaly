@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: sentinel
+Version: 0.1.0
+Summary: Real-Time Log Anomaly Detection with Slack Alerts
+Author: Sentinel Team
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: scikit-learn
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: joblib
+Requires-Dist: watchdog
+Requires-Dist: PyYAML
+Requires-Dist: requests
+
+# Sentinel
+
+Real-Time Log Anomaly Detection with Slack Alerts.

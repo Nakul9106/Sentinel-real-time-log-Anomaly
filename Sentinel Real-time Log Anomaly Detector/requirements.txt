@@ -1,0 +1,8 @@
+scikit-learn
+numpy
+scipy
+joblib
+watchdog
+PyYAML
+requests
+flask
